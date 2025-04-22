@@ -109,7 +109,8 @@ ENDIF.
 
 
 FORM PF_STATUS USING RT_EXTAB TYPE SLIS_T_EXTAB.
-SET PF-STATUS 'SALES'.
+*SET PF-STATUS 'SALES'. "earlier
+SET PF-STATUS 'SALES1'. " now we are using it has 1st copy of saplsalv standard pf status
 ENDFORM.
 
 
