@@ -1,0 +1,216 @@
+*interactive alv repot
+
+REPORT ZPRG_SALES_ORDER_78.
+
+TYPES: BEGIN OF lty_vbak,
+         vbeln TYPE vbeln_va,
+         erdat TYPE erdat,
+         erzet TYPE erzet,
+         ernam TYPE ernam,
+         vbtyp TYPE vbtyp,
+       END OF lty_vbak.
+DATA: lt_vbak TYPE TABLE OF lty_vbak,
+      ls_vbak TYPE lty_vbak.
+
+DATA: lv_vbeln TYPE vbeln_va.
+SELECT-OPTIONS: s_vbeln FOR lv_vbeln.
+
+SELECT vbeln erdat erzet ernam vbtyp FROM vbak INTO TABLE lt_vbak WHERE vbeln IN s_vbeln.
+
+DATA: lt_fieldcatalog TYPE SLIS_T_FIELDCAT_ALV,
+      ls_fieldcatalog TYPE slis_fieldcat_alv.
+
+ls_fieldcatalog-col_pos = 1.
+ls_fieldcatalog-fieldname = 'VBELN'.
+ls_fieldcatalog-tabname = 'LT_VBAK'.
+ls_fieldcatalog-seltext_l = 'Sales Document Number'.
+APPEND ls_fieldcatalog to lt_fieldcatalog.
+CLEAR: ls_fieldcatalog.
+
+ls_fieldcatalog-col_pos = 2.
+ls_fieldcatalog-fieldname = 'ERDAT'.
+ls_fieldcatalog-tabname = 'LT_VBAK'.
+ls_fieldcatalog-seltext_l = 'Date on Which Record Was Created'.
+APPEND ls_fieldcatalog to lt_fieldcatalog.
+CLEAR: ls_fieldcatalog.
+
+ls_fieldcatalog-col_pos = 3.
+ls_fieldcatalog-fieldname = 'ERZET'.
+ls_fieldcatalog-tabname = 'LT_VBAK'.
+ls_fieldcatalog-seltext_l = 'Entry time'.
+APPEND ls_fieldcatalog to lt_fieldcatalog.
+CLEAR: ls_fieldcatalog.
+
+ls_fieldcatalog-col_pos = 4.
+ls_fieldcatalog-fieldname = 'ERNAM'.
+ls_fieldcatalog-tabname = 'LT_VBAK'.
+ls_fieldcatalog-seltext_l = 'Name of Person who Created the Object'.
+APPEND ls_fieldcatalog to lt_fieldcatalog.
+CLEAR: ls_fieldcatalog.
+
+ls_fieldcatalog-col_pos = 5.
+ls_fieldcatalog-fieldname = 'VBTYP'.
+ls_fieldcatalog-tabname = 'LT_VBAK'.
+ls_fieldcatalog-seltext_l = 'SD document category'.
+APPEND ls_fieldcatalog to lt_fieldcatalog.
+CLEAR: ls_fieldcatalog.
+
+CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+ EXPORTING
+*   I_INTERFACE_CHECK                 = ' '
+*   I_BYPASSING_BUFFER                = ' '
+*   I_BUFFER_ACTIVE                   = ' '
+   I_CALLBACK_PROGRAM                = SY-REPID
+   I_CALLBACK_PF_STATUS_SET          = 'PF_STATUS'
+   I_CALLBACK_USER_COMMAND           = 'USR_COMMAND'
+*   I_CALLBACK_TOP_OF_PAGE            = ' '
+*   I_CALLBACK_HTML_TOP_OF_PAGE       = ' '
+*   I_CALLBACK_HTML_END_OF_LIST       = ' '
+*   I_STRUCTURE_NAME                  =
+*   I_BACKGROUND_ID                   = ' '
+*   I_GRID_TITLE                      =
+*   I_GRID_SETTINGS                   =
+*   IS_LAYOUT                         =
+   IT_FIELDCAT                       = lt_fieldcatalog
+*   IT_EXCLUDING                      =
+*   IT_SPECIAL_GROUPS                 =
+*   IT_SORT                           =
+*   IT_FILTER                         =
+*   IS_SEL_HIDE                       =
+*   I_DEFAULT                         = 'X'
+*   I_SAVE                            = ' '
+*   IS_VARIANT                        =
+*   IT_EVENTS                         =
+*   IT_EVENT_EXIT                     =
+*   IS_PRINT                          =
+*   IS_REPREP_ID                      =
+*   I_SCREEN_START_COLUMN             = 0
+*   I_SCREEN_START_LINE               = 0
+*   I_SCREEN_END_COLUMN               = 0
+*   I_SCREEN_END_LINE                 = 0
+*   I_HTML_HEIGHT_TOP                 = 0
+*   I_HTML_HEIGHT_END                 = 0
+*   IT_ALV_GRAPHICS                   =
+*   IT_HYPERLINK                      =
+*   IT_ADD_FIELDCAT                   =
+*   IT_EXCEPT_QINFO                   =
+*   IR_SALV_FULLSCREEN_ADAPTER        =
+* IMPORTING
+*   E_EXIT_CAUSED_BY_CALLER           =
+*   ES_EXIT_CAUSED_BY_USER            =
+  TABLES
+    t_outtab                          = lt_vbak
+ EXCEPTIONS
+   PROGRAM_ERROR                     = 1
+   OTHERS                            = 2
+          .
+IF sy-subrc <> 0.
+* Implement suitable error handling here
+ENDIF.
+
+
+FORM PF_STATUS USING RT_EXTAB TYPE SLIS_T_EXTAB.
+SET PF-STATUS 'SALES'.
+ENDFORM.
+
+
+FORM USR_COMMAND USING R_UCOMM LIKE SY-UCOMM
+                                  RS_SELFIELD TYPE SLIS_SELFIELD.
+
+DATA: lt_fieldcatalog1 TYPE SLIS_T_FIELDCAT_ALV,
+      ls_fieldcatalog1 TYPE slis_fieldcat_alv.
+
+TYPES: BEGIN OF lty_vbap,
+         vbeln TYPE vbeln_va,
+         posnr TYPE posnr_va,
+         matnr TYPE matnr,
+       END OF lty_vbap.
+DATA: lt_vbap TYPE TABLE OF lty_vbap,
+      ls_vbap TYPE lty_vbap.
+
+*SELECT vbeln posnr matnr FROM vbap INTO TABLE lt_vbap where vbeln = RS_SELFIELD-value.
+*this part causes bug that wont give secondary list if something other the vbeln col has cursor
+
+REFRESH: lt_fieldcatalog1. "necessary or else acculmilation bug
+
+READ TABLE lt_vbak INTO ls_vbak INDEX RS_SELFIELD-TABINDEX.
+IF sy-subrc = 0.
+SELECT vbeln posnr matnr FROM vbap INTO TABLE lt_vbap where vbeln = ls_vbak-vbeln.
+ENDIF.
+
+
+ls_fieldcatalog1-col_pos = 1.
+ls_fieldcatalog1-fieldname = 'VBELN'.
+ls_fieldcatalog1-tabname = 'LT_VBAP'.
+ls_fieldcatalog1-seltext_l = 'Sales Document Number'.
+APPEND ls_fieldcatalog1 to lt_fieldcatalog1.
+CLEAR: ls_fieldcatalog1.
+
+ls_fieldcatalog1-col_pos = 2.
+ls_fieldcatalog1-fieldname = 'POSNR'.
+ls_fieldcatalog1-tabname = 'LT_VBAP'.
+ls_fieldcatalog1-seltext_l = 'Sales Document Item'.
+APPEND ls_fieldcatalog1 to lt_fieldcatalog1.
+CLEAR: ls_fieldcatalog1.
+
+ls_fieldcatalog1-col_pos = 3.
+ls_fieldcatalog1-fieldname = 'MATNR'.
+ls_fieldcatalog1-tabname = 'LT_VBAP'.
+ls_fieldcatalog1-seltext_l = 'Material Number'.
+APPEND ls_fieldcatalog1 to lt_fieldcatalog1.
+CLEAR: ls_fieldcatalog1.
+
+CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+ EXPORTING
+*   I_INTERFACE_CHECK                 = ' '
+*   I_BYPASSING_BUFFER                = ' '
+*   I_BUFFER_ACTIVE                   = ' '
+   I_CALLBACK_PROGRAM                = sy-repid
+*   I_CALLBACK_PF_STATUS_SET          = ' '
+*   I_CALLBACK_USER_COMMAND           = ' '
+*   I_CALLBACK_TOP_OF_PAGE            = ' '
+*   I_CALLBACK_HTML_TOP_OF_PAGE       = ' '
+*   I_CALLBACK_HTML_END_OF_LIST       = ' '
+*   I_STRUCTURE_NAME                  =
+*   I_BACKGROUND_ID                   = ' '
+*   I_GRID_TITLE                      =
+*   I_GRID_SETTINGS                   =
+*   IS_LAYOUT                         =
+   IT_FIELDCAT                       = lt_fieldcatalog1
+*   IT_EXCLUDING                      =
+*   IT_SPECIAL_GROUPS                 =
+*   IT_SORT                           =
+*   IT_FILTER                         =
+*   IS_SEL_HIDE                       =
+*   I_DEFAULT                         = 'X'
+*   I_SAVE                            = ' '
+*   IS_VARIANT                        =
+*   IT_EVENTS                         =
+*   IT_EVENT_EXIT                     =
+*   IS_PRINT                          =
+*   IS_REPREP_ID                      =
+*   I_SCREEN_START_COLUMN             = 0
+*   I_SCREEN_START_LINE               = 0
+*   I_SCREEN_END_COLUMN               = 0
+*   I_SCREEN_END_LINE                 = 0
+*   I_HTML_HEIGHT_TOP                 = 0
+*   I_HTML_HEIGHT_END                 = 0
+*   IT_ALV_GRAPHICS                   =
+*   IT_HYPERLINK                      =
+*   IT_ADD_FIELDCAT                   =
+*   IT_EXCEPT_QINFO                   =
+*   IR_SALV_FULLSCREEN_ADAPTER        =
+* IMPORTING
+*   E_EXIT_CAUSED_BY_CALLER           =
+*   ES_EXIT_CAUSED_BY_USER            =
+  TABLES
+    t_outtab                          = lt_vbap
+ EXCEPTIONS
+   PROGRAM_ERROR                     = 1
+   OTHERS                            = 2
+          .
+IF sy-subrc <> 0.
+* Implement suitable error handling here
+ENDIF.
+
+ENDFORM.
