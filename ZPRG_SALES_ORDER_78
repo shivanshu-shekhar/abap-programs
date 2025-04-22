@@ -111,6 +111,7 @@ ENDIF.
 FORM PF_STATUS USING RT_EXTAB TYPE SLIS_T_EXTAB.
 *SET PF-STATUS 'SALES'. "earlier
 SET PF-STATUS 'SALES1'. " now we are using it has 1st copy of saplsalv standard pf status
+* se41 -> copy status -> frm program:- saplsalv       status:- standard    to program name and statusname use in program set the display
 ENDFORM.
 
 
