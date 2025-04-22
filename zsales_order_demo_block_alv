@@ -1,0 +1,160 @@
+REPORT zsales_order_demo_block_alv.
+
+TYPES: BEGIN OF lty_vbak,
+         vbeln TYPE vbeln_va,
+         erdat TYPE erdat,
+         erzet TYPE erzet,
+         ernam TYPE ernam,
+         vbtyp TYPE vbtyp,
+       END OF lty_vbak.
+DATA: lt_vbak TYPE TABLE OF lty_vbak,
+      ls_vbak TYPE lty_vbak.
+
+TYPES: BEGIN OF lty_vbap,
+         vbeln TYPE vbeln_va,
+         posnr TYPE posnr_va,
+         matnr TYPE matnr,
+       END OF lty_vbap.
+DATA: lt_vbap TYPE TABLE OF lty_vbap,
+      ls_vbap TYPE lty_vbap.
+
+DATA: lv_vbeln TYPE vbeln_va.
+SELECT-OPTIONS: s_vbeln FOR lv_vbeln.
+
+SELECT vbeln erdat erzet ernam vbtyp FROM vbak INTO TABLE lt_vbak WHERE vbeln IN s_vbeln.
+
+IF lt_vbak IS NOT INITIAL.
+SELECT vbeln posnr matnr FROM vbap INTO TABLE lt_vbap FOR ALL ENTRIES IN lt_vbak where vbeln = lt_vbak-vbeln.
+ENDIF.
+
+DATA: lt_fieldcatalog_vbak TYPE SLIS_T_FIELDCAT_ALV,
+      ls_fieldcatalog_vbak TYPE slis_fieldcat_alv.
+DATA: lt_fieldcatalog_vbap TYPE SLIS_T_FIELDCAT_ALV,
+      ls_fieldcatalog_vbap TYPE slis_fieldcat_alv.
+
+ls_fieldcatalog_vbak-col_pos = 1.
+ls_fieldcatalog_vbak-fieldname = 'VBELN'.
+ls_fieldcatalog_vbak-tabname = 'LT_VBAK'.
+ls_fieldcatalog_vbak-seltext_l = 'Sales Document Number'.
+APPEND ls_fieldcatalog_vbak to lt_fieldcatalog_vbak.
+CLEAR: ls_fieldcatalog_vbak.
+
+ls_fieldcatalog_vbak-col_pos = 2.
+ls_fieldcatalog_vbak-fieldname = 'ERDAT'.
+ls_fieldcatalog_vbak-tabname = 'LT_VBAK'.
+ls_fieldcatalog_vbak-seltext_l = 'Date on Which Record Was Created'.
+APPEND ls_fieldcatalog_vbak to lt_fieldcatalog_vbak.
+CLEAR: ls_fieldcatalog_vbak.
+
+ls_fieldcatalog_vbak-col_pos = 3.
+ls_fieldcatalog_vbak-fieldname = 'ERZET'.
+ls_fieldcatalog_vbak-tabname = 'LT_VBAK'.
+ls_fieldcatalog_vbak-seltext_l = 'Entry time'.
+APPEND ls_fieldcatalog_vbak to lt_fieldcatalog_vbak.
+CLEAR: ls_fieldcatalog_vbak.
+
+ls_fieldcatalog_vbak-col_pos = 4.
+ls_fieldcatalog_vbak-fieldname = 'ERNAM'.
+ls_fieldcatalog_vbak-tabname = 'LT_VBAK'.
+ls_fieldcatalog_vbak-seltext_l = 'Name of Person who Created the Object'.
+APPEND ls_fieldcatalog_vbak to lt_fieldcatalog_vbak.
+CLEAR: ls_fieldcatalog_vbak.
+
+ls_fieldcatalog_vbak-col_pos = 5.
+ls_fieldcatalog_vbak-fieldname = 'VBTYP'.
+ls_fieldcatalog_vbak-tabname = 'LT_VBAK'.
+ls_fieldcatalog_vbak-seltext_l = 'SD document category'.
+APPEND ls_fieldcatalog_vbak to lt_fieldcatalog_vbak.
+CLEAR: ls_fieldcatalog_vbak.
+
+ls_fieldcatalog_vbap-col_pos = 1.
+ls_fieldcatalog_vbap-fieldname = 'VBELN'.
+ls_fieldcatalog_vbap-tabname = 'LT_VBAP'.
+ls_fieldcatalog_vbap-seltext_l = 'Sales Document Number'.
+APPEND ls_fieldcatalog_vbap to lt_fieldcatalog_vbap.
+CLEAR: ls_fieldcatalog_vbap.
+
+ls_fieldcatalog_vbap-col_pos = 2.
+ls_fieldcatalog_vbap-fieldname = 'POSNR'.
+ls_fieldcatalog_vbap-tabname = 'LT_VBAP'.
+ls_fieldcatalog_vbap-seltext_l = 'Sales Document Item'.
+APPEND ls_fieldcatalog_vbap to lt_fieldcatalog_vbap.
+CLEAR: ls_fieldcatalog_vbap.
+
+ls_fieldcatalog_vbap-col_pos = 3.
+ls_fieldcatalog_vbap-fieldname = 'MATNR'.
+ls_fieldcatalog_vbap-tabname = 'LT_VBAP'.
+ls_fieldcatalog_vbap-seltext_l = 'Material Number'.
+APPEND ls_fieldcatalog_vbap to lt_fieldcatalog_vbap.
+CLEAR: ls_fieldcatalog_vbap.
+
+*open the function module see which one is mandatory fill it only this function module for initialization
+CALL FUNCTION 'REUSE_ALV_BLOCK_LIST_INIT'
+  EXPORTING
+    i_callback_program             = sy-repid "name of our program
+*   I_CALLBACK_PF_STATUS_SET       = ' '
+*   I_CALLBACK_USER_COMMAND        = ' '
+*   IT_EXCLUDING  =
+.
+
+DATA: lwa_layout_vbak TYPE SLIS_LAYOUT_ALV,
+      lt_events_vbak TYPE SLIS_T_EVENT,
+      lwa_layout_vbap TYPE SLIS_LAYOUT_ALV,
+      lt_events_vbap TYPE SLIS_T_EVENT.
+
+CALL FUNCTION 'REUSE_ALV_BLOCK_LIST_APPEND'
+  EXPORTING
+    is_layout                        = lwa_layout_vbak " its mandatory at this time we are not passing any value but its necessary for us to write we have to declare it
+    it_fieldcat                      = lt_fieldcatalog_vbak
+    i_tabname                        = 'LT_VBAK'
+    it_events                        = lt_events_vbak " its mandatory at this time we are not passing any value but its necessary for us to write we have to declare it
+*   IT_SORT                          =
+*   I_TEXT                           = ' '
+  TABLES
+    t_outtab                         = lt_vbak
+ EXCEPTIONS
+   PROGRAM_ERROR                    = 1
+   MAXIMUM_OF_APPENDS_REACHED       = 2
+   OTHERS                           = 3
+          .
+IF sy-subrc <> 0.
+* Implement suitable error handling here
+ENDIF.
+
+CALL FUNCTION 'REUSE_ALV_BLOCK_LIST_APPEND'
+  EXPORTING
+    is_layout                        = lwa_layout_vbap " its mandatory at this time we are not passing any value but its necessary for us to write we have to declare it
+    it_fieldcat                      = lt_fieldcatalog_vbap
+    i_tabname                        = 'LT_VBAP'
+    it_events                        = lt_events_vbap " its mandatory at this time we are not passing any value but its necessary for us to write we have to declare it
+*   IT_SORT                          =
+*   I_TEXT                           = ' '
+  TABLES
+    t_outtab                         = lt_vbap
+ EXCEPTIONS
+   PROGRAM_ERROR                    = 1
+   MAXIMUM_OF_APPENDS_REACHED       = 2
+   OTHERS                           = 3
+          .
+IF sy-subrc <> 0.
+* Implement suitable error handling here
+ENDIF.
+
+CALL FUNCTION 'REUSE_ALV_BLOCK_LIST_DISPLAY'
+* EXPORTING
+*   I_INTERFACE_CHECK             = ' '
+*   IS_PRINT                      =
+*   I_SCREEN_START_COLUMN         = 0
+*   I_SCREEN_START_LINE           = 0
+*   I_SCREEN_END_COLUMN           = 0
+*   I_SCREEN_END_LINE             = 0
+* IMPORTING
+*   E_EXIT_CAUSED_BY_CALLER       =
+*   ES_EXIT_CAUSED_BY_USER        =
+ EXCEPTIONS
+   PROGRAM_ERROR                 = 1
+   OTHERS                        = 2
+          .
+IF sy-subrc <> 0.
+* Implement suitable error handling here
+ENDIF.
