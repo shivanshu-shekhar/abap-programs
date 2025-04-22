@@ -1,5 +1,3 @@
-*interactive alv repot
-
 REPORT ZPRG_SALES_ORDER_78.
 
 TYPES: BEGIN OF lty_vbak,
@@ -23,6 +21,7 @@ DATA: lt_fieldcatalog TYPE SLIS_T_FIELDCAT_ALV,
 ls_fieldcatalog-col_pos = 1.
 ls_fieldcatalog-fieldname = 'VBELN'.
 ls_fieldcatalog-tabname = 'LT_VBAK'.
+ls_fieldcatalog-hotspot = 'X'.
 ls_fieldcatalog-seltext_l = 'Sales Document Number'.
 APPEND ls_fieldcatalog to lt_fieldcatalog.
 CLEAR: ls_fieldcatalog.
@@ -131,6 +130,8 @@ DATA: lt_vbap TYPE TABLE OF lty_vbap,
 *SELECT vbeln posnr matnr FROM vbap INTO TABLE lt_vbap where vbeln = RS_SELFIELD-value.
 *this part causes bug that wont give secondary list if something other the vbeln col has cursor
 
+IF r_ucomm = 'DISPLAY' . " this is done to restrict functionality to only DISPLAY nothing else
+
 REFRESH: lt_fieldcatalog1. "necessary or else acculmilation bug
 
 READ TABLE lt_vbak INTO ls_vbak INDEX RS_SELFIELD-TABINDEX.
@@ -211,6 +212,13 @@ CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
           .
 IF sy-subrc <> 0.
 * Implement suitable error handling here
+ENDIF.
+ENDIF.
+
+IF r_ucomm = '&IC1'.
+SET PARAMETER ID 'AUN' FIELD rs_selfield-value. " the parameter id of part where we wanna fill is AUN with this line we will fill it
+CALL TRANSACTION 'VA03'. " takes to va03
+* LEAVE TO TRANSACTION 'VA03'.  " overwrites se38 with va03 we cant come back
 ENDIF.
 
 ENDFORM.
