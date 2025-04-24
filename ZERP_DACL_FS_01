@@ -1,0 +1,358 @@
+REPORT ZERP_DACL_FS_01.
+
+TYPES: BEGIN OF lty_mseg,
+  mblnr TYPE MBLNR,
+  matnr TYPE MATNR,
+  werks TYPE WERKS_D,
+  lgort TYPE LGORT_D,
+  charg TYPE CHARG_D,
+  menge TYPE MENGE_D,
+  meins TYPE MEINS,
+  aufnr TYPE AUFNR,
+  budat_mkpf TYPE BUDAT,
+  END OF lty_mseg.
+DATA: lt_mseg TYPE TABLE OF lty_mseg,
+      lwa_mseg TYPE lty_mseg.
+* making of mseg structure , workarea and internal table
+
+TYPES: BEGIN OF lty_mkpf,
+       mblnr TYPE MBLNR,
+       xblnr TYPE XBLNR1,
+       bktxt TYPE BKTXT,
+       END OF lty_mkpf.
+DATA: lt_mkpf TYPE TABLE OF lty_mkpf,
+      lwa_mkpf TYPE lty_mkpf.
+* making of mkpf structure , workarea and internal table
+
+TYPES: BEGIN OF lty_makt,
+       matnr TYPE MATNR,
+       maktx TYPE MAKTX,
+       END OF lty_makt.
+DATA: lt_makt TYPE TABLE OF lty_makt,
+      lwa_makt TYPE lty_makt.
+* making of makt structure , workarea and internal table
+
+TYPES: BEGIN OF lty_mara,
+       matnr TYPE MATNR,
+       matkl TYPE MATKL,
+       END OF lty_mara.
+DATA: lt_mara TYPE TABLE OF lty_mara,
+      lwa_mara TYPE lty_mara.
+* making of mara structure , workarea and internal table
+
+TYPES: BEGIN OF lty_final,
+       matnr TYPE MATNR, "
+      werks TYPE WERKS_D, "
+      charg TYPE CHARG_D,"
+      menge TYPE MENGE_D, "
+      meins TYPE MEINS, "
+      aufnr TYPE AUFNR, "
+      budat_mkpf TYPE BUDAT, "
+       xblnr TYPE XBLNR1, "
+       bktxt TYPE BKTXT, "
+       maktx TYPE MAKTX, "
+       matkl TYPE MATKL, "
+       END OF lty_final.
+DATA: lt_final TYPE TABLE OF lty_final,
+      lwa_final TYPE lty_final.
+* making of final structure , workarea and internal table
+*---------------------------------------------------------------------------------------------------------------
+DATA:
+      lv_werks TYPE WERKS_D,
+      lv_lgort TYPE LGORT_D,
+      lv_budat_mkpf TYPE BUDAT.
+
+
+SELECT-OPTIONS :
+s_werks FOR lv_werks NO INTERVALS,
+s_lgort FOR lv_lgort NO INTERVALS ,
+s_budat FOR lv_budat_mkpf NO-EXTENSION .
+* making of input screen, obligatory is not used to keep simple but will be used according to question
+
+PARAMETERS: p_120x RADIOBUTTON GROUP rg1 ,
+            p_1234 RADIOBUTTON GROUP rg1.
+
+
+PARAMETERS: p_chk AS CHECKBOX USER-COMMAND ucomm.
+
+AT SELECTION-SCREEN OUTPUT.
+  LOOP AT SCREEN.
+    " Make S_WERKS editable/non-editable
+    IF screen-name = 'S_WERKS-LOW' OR screen-name = 'S_WERKS-HIGH'.
+      IF p_chk = 'X'.
+        screen-input = 1.  " Enable manual input
+        CLEAR s_werks[].
+        CLEAR s_werks.
+      ELSE.
+        screen-input = 0.  " Read-only, values set from radio button
+        CLEAR s_werks[].
+        CLEAR s_werks.
+      ENDIF.
+      MODIFY SCREEN.
+    ENDIF.
+
+    " Hide/show radio buttons
+    IF screen-name = 'P_120X' OR screen-name = 'P_1234'.
+      IF p_chk = 'X'.
+        screen-active = 0.  " Hide (disable)
+      ELSE.
+        screen-active = 1.  " Show
+      ENDIF.
+      MODIFY SCREEN.
+    ENDIF.
+  ENDLOOP.
+
+  AT SELECTION-SCREEN.
+   CLEAR s_werks[].
+   IF p_chk IS INITIAL.
+  IF p_1234 = 'X'.
+    s_werks-sign = 'I'.
+    s_werks-option = 'EQ'.
+    s_werks-low = '1234'.
+    APPEND s_werks to s_werks[].
+    CLEAR: s_werks.
+
+
+  ELSe .
+    CLEAR s_werks[].
+      s_werks-sign = 'I'.
+      s_werks-option = 'EQ'.
+      s_werks-low = '1206'.
+      APPEND s_werks to s_werks[].
+      CLEAR s_werks.
+      s_werks-sign = 'I'.
+      s_werks-option = 'EQ'.
+      s_werks-low = '1207'.
+      APPEND s_werks to s_werks[].
+      CLEAR s_werks.
+    ENDIF.
+       ENDIF.
+
+*--------------------------------------------------------------------------------------------------------------------------------------
+
+SELECT mblnr matnr werks lgort charg menge meins aufnr budat_mkpf FROM MSEG INTO TABLE lt_mseg WHERE werks in s_werks AND budat_mkpf in s_budat
+AND shkzg = 'S' AND kzbew = 'F'.
+*populating lt_mseg
+
+IF lt_mseg IS NOT INITIAL.
+SELECT mblnr xblnr bktxt FROM mkpf INTO TABLE lt_mkpf FOR ALL ENTRIES IN lt_mseg WHERE mblnr = lt_mseg-mblnr.
+ENDIF.
+*populating lt_mkpf
+
+IF lt_mseg IS NOT INITIAL.
+SELECT matnr maktx FROM makt INTO TABLE lt_makt FOR ALL ENTRIES IN lt_mseg WHERE matnr = lt_mseg-matnr.
+ENDIF.
+*populating lt_makt
+
+IF lt_mara IS NOT INITIAL.
+SELECT matnr matkl FROM mara INTO TABLE lt_mara FOR ALL ENTRIES IN lt_mseg WHERE matnr = lt_mseg-matnr.
+ENDIF.
+*populating lt_mara
+
+LOOP AT  lt_mseg INTO lwa_mseg.
+LOOP AT  lt_mkpf INTO lwa_mkpf WHERE mblnr = lwa_mseg-mblnr.
+lwa_final-matnr = lwa_mseg-matnr.
+lwa_final-werks = lwa_mseg-werks.
+lwa_final-charg = lwa_mseg-charg.
+lwa_final-menge = lwa_mseg-menge.
+lwa_final-meins = lwa_mseg-meins.
+lwa_final-aufnr = lwa_mseg-aufnr.
+lwa_final-budat_mkpf = lwa_mseg-budat_mkpf.
+lwa_final-xblnr = lwa_mkpf-xblnr.
+lwa_final-bktxt = lwa_mkpf-bktxt.
+APPEND lwa_final TO lt_final.
+clear: lwa_final.
+ENDLOOP.
+ENDLOOP.
+*populating lt_final with data of lt_mseg and lt_mkpf
+
+LOOP AT lt_final INTO lwa_final .
+LOOP AT  lt_makt INTO lwa_makt WHERE matnr = lwa_final-matnr.
+lwa_final-maktx = lwa_makt-maktx.
+MODIFY lt_final FROM lwa_final TRANSPORTING maktx.
+ENDLOOP.
+ENDLOOP.
+*modifying lt_final with lt_makt
+
+LOOP AT lt_final INTO lwa_final .
+LOOP AT  lt_mara INTO lwa_mara WHERE matnr = lwa_mseg-matnr.
+lwa_final-matkl = lwa_mara-matkl.
+MODIFY lt_final FROM lwa_final TRANSPORTING matkl.
+ENDLOOP.
+ENDLOOP.
+*modifying lt_final with lt_mara
+
+DATA: lt_fieldcatalog_final TYPE SLIS_T_FIELDCAT_ALV ,
+      lwa_fieldcatalog_final TYPE slis_fieldcat_alv.
+
+lwa_fieldcatalog_final-col_pos = '1'.
+lwa_fieldcatalog_final-fieldname = 'BUDAT_MKPF'.
+lwa_fieldcatalog_final-tabname = 'LT_FINAL'.
+lwa_fieldcatalog_final-seltext_l = 'DATE'.
+lwa_fieldcatalog_final-emphasize = 'C300'.
+lwa_fieldcatalog_final-edit = 'X'.
+APPEND lwa_fieldcatalog_final TO lt_fieldcatalog_final.
+clear: lwa_fieldcatalog_final.
+
+lwa_fieldcatalog_final-col_pos = '2'.
+lwa_fieldcatalog_final-fieldname = 'WERKS'.
+lwa_fieldcatalog_final-tabname = 'LT_FINAL'.
+lwa_fieldcatalog_final-seltext_l = 'PLANT'.
+lwa_fieldcatalog_final-emphasize = 'C300'.
+APPEND lwa_fieldcatalog_final TO lt_fieldcatalog_final.
+clear: lwa_fieldcatalog_final.
+
+lwa_fieldcatalog_final-col_pos = '3'.
+lwa_fieldcatalog_final-fieldname = 'MATNR'.
+lwa_fieldcatalog_final-tabname = 'LT_FINAL'.
+lwa_fieldcatalog_final-seltext_l = 'MATERIAL'.
+lwa_fieldcatalog_final-emphasize = 'C300'.
+APPEND lwa_fieldcatalog_final TO lt_fieldcatalog_final.
+clear: lwa_fieldcatalog_final.
+
+lwa_fieldcatalog_final-col_pos = '4'.
+lwa_fieldcatalog_final-fieldname = 'MAKTX'.
+lwa_fieldcatalog_final-tabname = 'LT_FINAL'.
+lwa_fieldcatalog_final-seltext_l = 'MAT. DESCRIPTION'.
+lwa_fieldcatalog_final-emphasize = 'C300'.
+APPEND lwa_fieldcatalog_final TO lt_fieldcatalog_final.
+clear: lwa_fieldcatalog_final.
+
+lwa_fieldcatalog_final-col_pos = '5'.
+lwa_fieldcatalog_final-fieldname = 'CHARG'.
+lwa_fieldcatalog_final-tabname = 'LT_FINAL'.
+lwa_fieldcatalog_final-seltext_l = 'BATCH'.
+lwa_fieldcatalog_final-emphasize = 'C300'.
+APPEND lwa_fieldcatalog_final TO lt_fieldcatalog_final.
+clear: lwa_fieldcatalog_final.
+
+lwa_fieldcatalog_final-col_pos = '6'.
+lwa_fieldcatalog_final-fieldname = 'MENGE'.
+lwa_fieldcatalog_final-tabname = 'LT_FINAL'.
+lwa_fieldcatalog_final-seltext_l = 'QTY.'.
+lwa_fieldcatalog_final-emphasize = 'C300'.
+lwa_fieldcatalog_final-do_sum = 'X'.
+APPEND lwa_fieldcatalog_final TO lt_fieldcatalog_final.
+clear: lwa_fieldcatalog_final.
+
+lwa_fieldcatalog_final-col_pos = '7'.
+lwa_fieldcatalog_final-fieldname = 'MEINS'.
+lwa_fieldcatalog_final-tabname = 'LT_FINAL'.
+lwa_fieldcatalog_final-seltext_l = 'UOM'.
+lwa_fieldcatalog_final-emphasize = 'C300'.
+APPEND lwa_fieldcatalog_final TO lt_fieldcatalog_final.
+clear: lwa_fieldcatalog_final.
+
+lwa_fieldcatalog_final-col_pos = '8'.
+lwa_fieldcatalog_final-fieldname = 'AUFNR'.
+lwa_fieldcatalog_final-tabname = 'LT_FINAL'.
+lwa_fieldcatalog_final-seltext_l = 'ORDER NO.'.
+lwa_fieldcatalog_final-emphasize = 'C300'.
+APPEND lwa_fieldcatalog_final TO lt_fieldcatalog_final.
+clear: lwa_fieldcatalog_final.
+
+lwa_fieldcatalog_final-col_pos = '9'.
+lwa_fieldcatalog_final-fieldname = 'XBLNR'.
+lwa_fieldcatalog_final-tabname = 'LT_FINAL'.
+lwa_fieldcatalog_final-seltext_l = 'FLIGHT NO.'.
+lwa_fieldcatalog_final-emphasize = 'C300'.
+APPEND lwa_fieldcatalog_final TO lt_fieldcatalog_final.
+clear: lwa_fieldcatalog_final.
+
+lwa_fieldcatalog_final-col_pos = '10'.
+lwa_fieldcatalog_final-fieldname = 'BKTXT'.
+lwa_fieldcatalog_final-tabname = 'LT_FINAL'.
+lwa_fieldcatalog_final-seltext_l = 'SECTOR'.
+lwa_fieldcatalog_final-emphasize = 'C300'.
+APPEND lwa_fieldcatalog_final TO lt_fieldcatalog_final.
+clear: lwa_fieldcatalog_final.
+
+lwa_fieldcatalog_final-col_pos = '11'.
+lwa_fieldcatalog_final-fieldname = 'MATKL'.
+lwa_fieldcatalog_final-tabname = 'LT_FINAL'.
+lwa_fieldcatalog_final-seltext_l = 'MAT. GROUP'.
+lwa_fieldcatalog_final-emphasize = 'C300'.
+APPEND lwa_fieldcatalog_final TO lt_fieldcatalog_final.
+clear: lwa_fieldcatalog_final.
+*fieldcatalog declaring and making manually
+
+CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+ EXPORTING
+*   I_INTERFACE_CHECK                 = ' '
+*   I_BYPASSING_BUFFER                = ' '
+*   I_BUFFER_ACTIVE                   = ' '
+   I_CALLBACK_PROGRAM                = SY-REPID
+*   I_CALLBACK_PF_STATUS_SET          = ' '
+*   I_CALLBACK_USER_COMMAND           = ' '
+   I_CALLBACK_TOP_OF_PAGE            = 'TOP_PAGE'
+*   I_CALLBACK_HTML_TOP_OF_PAGE       = ' '
+*   I_CALLBACK_HTML_END_OF_LIST       = ' '
+*   I_STRUCTURE_NAME                  =
+*   I_BACKGROUND_ID                   = ' '
+*   I_GRID_TITLE                      =
+*   I_GRID_SETTINGS                   =
+*   IS_LAYOUT                         =
+   IT_FIELDCAT                       = lt_fieldcatalog_final
+*   IT_EXCLUDING                      =
+*   IT_SPECIAL_GROUPS                 =
+*   IT_SORT                           =
+*   IT_FILTER                         =
+*   IS_SEL_HIDE                       =
+*   I_DEFAULT                         = 'X'
+*   I_SAVE                            = ' '
+*   IS_VARIANT                        =
+*   IT_EVENTS                         =
+*   IT_EVENT_EXIT                     =
+*   IS_PRINT                          =
+*   IS_REPREP_ID                      =
+*   I_SCREEN_START_COLUMN             = 0
+*   I_SCREEN_START_LINE               = 0
+*   I_SCREEN_END_COLUMN               = 0
+*   I_SCREEN_END_LINE                 = 0
+*   I_HTML_HEIGHT_TOP                 = 0
+*   I_HTML_HEIGHT_END                 = 0
+*   IT_ALV_GRAPHICS                   =
+*   IT_HYPERLINK                      =
+*   IT_ADD_FIELDCAT                   =
+*   IT_EXCEPT_QINFO                   =
+*   IR_SALV_FULLSCREEN_ADAPTER        =
+* IMPORTING
+*   E_EXIT_CAUSED_BY_CALLER           =
+*   ES_EXIT_CAUSED_BY_USER            =
+  TABLES
+    t_outtab                          = lt_final
+ EXCEPTIONS
+   PROGRAM_ERROR                     = 1
+   OTHERS                            = 2
+          .
+IF sy-subrc <> 0.
+* Implement suitable error handling here
+ENDIF.
+* function module grid to bind data
+
+FORM top_page.
+  DATA: lt_comment TYPE slis_t_listheader,
+        lwa_comment TYPE slis_listheader.
+
+  lwa_comment-TYP = 'H' .
+  lwa_comment-INFO = 'MATERIAL MASTER REPORT' .
+  APPEND lwa_comment TO lt_comment .
+
+  lwa_comment-TYP = 'S' .
+  lwa_comment-KEY = 'USERNAME' .
+  lwa_comment-INFO = SY-UNAME .
+  APPEND lwa_comment TO lt_comment .
+
+  lwa_comment-TYP = 'A' .
+  lwa_comment-KEY = 'DATE' .
+  lwa_comment-INFO = SY-DATUM .
+  APPEND lwa_comment TO lt_comment.
+
+  CALL FUNCTION 'REUSE_ALV_COMMENTARY_WRITE'
+    EXPORTING
+      it_list_commentary       = lt_comment
+     I_LOGO                   = 'LOGO1'
+*     I_END_OF_LIST_GRID       =
+*     I_ALV_FORM               =
+            .
+ENDFORM.
