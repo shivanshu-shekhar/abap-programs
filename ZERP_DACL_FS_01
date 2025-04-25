@@ -64,7 +64,7 @@ DATA:
 
 
 SELECT-OPTIONS :
-s_werks FOR lv_werks NO INTERVALS,
+s_werks FOR lv_werks NO INTERVALS MODIF ID pla,
 s_lgort FOR lv_lgort NO INTERVALS ,
 s_budat FOR lv_budat_mkpf NO-EXTENSION .
 * making of input screen, obligatory is not used to keep simple but will be used according to question
@@ -73,37 +73,44 @@ PARAMETERS: p_120x RADIOBUTTON GROUP rg1 ,
             p_1234 RADIOBUTTON GROUP rg1.
 
 
-PARAMETERS: p_chk AS CHECKBOX USER-COMMAND ucomm.
+PARAMETERS: p_chk AS CHECKBOX USER-COMMAND select.
 
 AT SELECTION-SCREEN OUTPUT.
+IF p_chk = 'X'.
+*  CLEAR s_werks[].
+*        CLEAR s_werks.
   LOOP AT SCREEN.
-    " Make S_WERKS editable/non-editable
-    IF screen-name = 'S_WERKS-LOW' OR screen-name = 'S_WERKS-HIGH'.
-      IF p_chk = 'X'.
-        screen-input = 1.  " Enable manual input
-        CLEAR s_werks[].
-        CLEAR s_werks.
-      ELSE.
-        screen-input = 0.  " Read-only, values set from radio button
-        CLEAR s_werks[].
-        CLEAR s_werks.
-      ENDIF.
+    IF screen-group1 = 'PLA'.
+    " Hide/show radio buttons
+      screen-input = 1.  " Enable manual input
+         ENDIF.
+    IF screen-name = 'P_120X' OR screen-name = 'P_1234'.
+        screen-active = 0.  " Hide (disable)
       MODIFY SCREEN.
     ENDIF.
-
+    ENDLOOP.
+ENDIF.
+IF p_chk = ' ' .
+  CLEAR s_werks[].
+        CLEAR s_werks.
+  LOOP AT SCREEN.
+    IF screen-group1 = 'PLA'.
+    screen-input = 0.  " Read-only, values set from radio button
+         ENDIF.
     " Hide/show radio buttons
     IF screen-name = 'P_120X' OR screen-name = 'P_1234'.
-      IF p_chk = 'X'.
-        screen-active = 0.  " Hide (disable)
-      ELSE.
         screen-active = 1.  " Show
       ENDIF.
       MODIFY SCREEN.
-    ENDIF.
-  ENDLOOP.
+    ENDLOOP.
+ENDIF.
 
-  AT SELECTION-SCREEN.
-   CLEAR s_werks[].
+
+
+
+*  AT SELECTION-SCREEN.
+START-OF-SELECTION.
+*CLEAR s_werks[].
    IF p_chk IS INITIAL.
   IF p_1234 = 'X'.
     s_werks-sign = 'I'.
@@ -111,10 +118,7 @@ AT SELECTION-SCREEN OUTPUT.
     s_werks-low = '1234'.
     APPEND s_werks to s_werks[].
     CLEAR: s_werks.
-
-
-  ELSe .
-    CLEAR s_werks[].
+  ELSEIF p_120x = 'X'.
       s_werks-sign = 'I'.
       s_werks-option = 'EQ'.
       s_werks-low = '1206'.
